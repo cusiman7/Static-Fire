@@ -122,6 +122,10 @@ static\_fire.py performs the following actions:
 5. Build homepage
 6. Build feeds
 7. Build archive page
+8. Build additonal pages
+
+### Additional Pages
+Markdown files ending with ".text" in the "pages/" directory will be compiled into .html files and placed at the root of your website. This is useful for about pages or error pages like 404, 503 etc.
 
 ### Post Receive Git Hook
 post-receive is a simple git hook to execute static\_fire.py after a git push is received.
@@ -147,6 +151,9 @@ Static Fire generates .text files next to your .html files for your website. Thi
 
 https://shadedtriangle.com/articles/2017/10/review_golf_story.text
 
+### Markdown Configuration
+Markdown is configured by default to support footnotes[^1] and SmartPants style formatting.
+
 ### I Can't Commit my "config" File
 You really shouldn't because it can have sensitive information.
 To discourage you I hid it from git.
@@ -157,3 +164,5 @@ You can have it reappear in your working tree with.
 You can hide "config" again with:
 
     git update-index --skip-worktree config
+
+[^1]: Like this.
