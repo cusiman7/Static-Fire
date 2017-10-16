@@ -1,0 +1,8 @@
+# Example Config
+# Don't commit this file. It will contain OAuth secrets
+www /usr/local/var/www
+domain http://localhost:8080
+title Static Fire
+author Rob Cusimano
+date_format %B %d, %Y # strftime behavior
+homepage_count 50

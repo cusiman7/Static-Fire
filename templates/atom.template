@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>%ID%</id>
+  <title>%TITLE%</title>
+  <updated>%UPDATED%</updated>
+  <link href="%LINK_ALTERNATE%" rel="alternate"/>
+  <link href="%LINK_SELF%" rel="self"/>
+  <rights>%RIGHTS%</rights>
+  <subtitle>%SUBTITLE%</subtitle>
+%ENTRIES%
+</feed>

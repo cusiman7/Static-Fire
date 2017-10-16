@@ -1,0 +1,11 @@
+#!/bin/bash
+
+WORKING_DIR=$(pwd)
+if [ "$(basename "$WORKING_DIR")" == ".git" ]
+then
+    WORKING_DIR=$(dirname "$WORKING_DIR")
+fi
+
+pushd "$WORKING_DIR"
+./static_fire.py
+popd

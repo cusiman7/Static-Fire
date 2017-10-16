@@ -1,0 +1,6 @@
+<meta property="og:site_name"   content="Static Fire" />
+<meta property="og:type"        content="article" />
+<meta property="og:url"         content="%URL%" />
+<meta property="og:description" content="%SUMMARY%" />
+<meta property="og:title"       content="%TITLE%" />
+<meta property="og:image"       content="" />
