@@ -168,7 +168,7 @@ def build_article(config, md, templates, article):
     plain_text += "="*len(article.title) + "\n\n"
     plain_text += "    By " + config["author"] + "\n"
     date = article.created.strftime(config["date_format"])
-    plain_text += "    " + date 
+    plain_text += "    " + date + "\n"
     if (article.link is not None):
         plain_text += "    Link: " + article.link + "\n"
     plain_text += "    " + article.full_url + "\n\n"

@@ -3,7 +3,7 @@ Static Fire Readme
 
 Static Fire is an engine for creating static websites, primarily blogs.
 Instead of a standard database Static Fire uses Git as its primary data store.
-Static Fire was built by [@RobertCusimano](https://twitter.com/RobertCusimano) and powers [ShadedTriangle](https://ShadedTriangle.com)
+Static Fire was built by [@RobertCusimano](https://twitter.com/RobertCusimano) and powers [ShadedTriangle](https://ShadedTriangle.com).
 
 ## Features
 + Markdown articles
@@ -21,7 +21,7 @@ Static Fire was built by [@RobertCusimano](https://twitter.com/RobertCusimano) a
     pip install -r requirements.txt
 
 ## Installation (Webserver)
-    # Git clone or git push to webserver. You wan't a normal repository not a bare repository. Then...
+    # Git clone or git push to webserver. You want a normal repository not a bare repository. Then...
     pip install -r requirements.txt
     cp post-receive .git/hooks/ # Will run static_fire.py after a git push is received
     git config --local receive.denyCurrentBranch updateInstead # Allows a git push to update the local working copy
@@ -51,7 +51,7 @@ Articles are standard Markdown files except for a small header for metadata. Met
 
 + **link**
 
-    *Optional*. If your article is primarily a link to some other content this will make the header of the article be a link. This will also populate the feed entry with an "alternate" of the link and a "related" of the url to this page instead of the usual which is an "alternate" to the article itself.
+    *Optional*. If your article is primarily a link to some other content this will make the header of the article be a link. This will also populate the feed entry with an "alternate" of the link and a "related" of the url of the article instead of the usual which is an "alternate" to the article itself.
 
 ### Config
 Static Fire looks for a file called "config" next to it. Config lines are simple key values that split on the first space.
@@ -85,7 +85,7 @@ An example config looks like:
 
 + **date\_format** 
 
-    *String*. A nice format to print dates for your articles in pythons strftime format.
+    *String*. A nice format to print dates for your articles in Python's strftime format.
 
 + **homepage\_count** 
 
@@ -128,7 +128,7 @@ post-receive is a simple git hook to execute static\_fire.py after a git push is
 post-receive should be installed in ".git/hooks/" on your webserver to enable site re-building when you push new articles.
 
 ### Auto Tweet
-Static Fire will tweet articles if the commit they were authored is HEAD when static\_fire.py runs.
+Static Fire will tweet articles if the commit they were authored in is HEAD when static\_fire.py runs.
 You need to provide the four "twtr" keys in your config for auto tweet to work.
 You can get these keys by creating a [Twitter app for your account](https://apps.twitter.com/).
 Make sure your app was write and read access.
@@ -152,8 +152,8 @@ You really shouldn't because it can have sensitive information.
 To discourage you I hid it from git.
 You can have it reappear in your working tree with.
 
-    git upate-index --skip-worktree config
+    git upate-index --no-skip-worktree config
 
-You can hide "config" with:
+You can hide "config" again with:
 
-    git update-index --no-skip-worktree config
+    git update-index --skip-worktree config
