@@ -31,7 +31,7 @@ Static Fire was built by [@RobertCusimano](https://twitter.com/RobertCusimano) a
 
 All the action takes place in static\_fire.py.
 You can run it right now and it should generate an example website for you in "/usr/local/var/www".
-Place new plain text Markdown files ending with ".text" in the articles folder and the next time Static Fire runs it will generate html pages for them.
+Place new plain text Markdown files ending with ".text" in the articles folder, commit them to git, and the next time Static Fire runs it will generate html pages for them.
 
 ### Article Header
 Articles are standard Markdown files except for a small header for metadata. Metadata lines are a simple key and value that splits on the first space. A sinlge line of "end_header" marks the end of the header. An example header might look like:
