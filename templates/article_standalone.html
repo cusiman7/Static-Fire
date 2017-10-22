@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block social %}
+<meta name="twitter:card"        content="summary" />
+<meta name="twitter:site"        content="@shadedtriangle" />
+<meta name="twitter:creator"     content="@robertcusimano" />
+<meta name="twitter:title"       content="{{ article.title }}" />
+<meta name="twitter:description" content="{{ article.summary }}" />
+<meta name="twitter:image"       content="https://shadedtriangle.com/images/shaded_triangle_1024.png" />
+<meta property="og:site_name"   content="Shaded Triangle" />
+<meta property="og:type"        content="article" />
+<meta property="og:url"         content="{{ article.permalink }}" />
+<meta property="og:description" content="{{ article.summary }}" />
+<meta property="og:title"       content="{{ article.title }}" />
+<meta property="og:image"       content="https://shadedtriangle.com/images/shaded_triangle_1024.png" />
+{% endblock %}
+{% block content %}
+{% include "article.html" %}
+{% endblock %}

@@ -1,0 +1,13 @@
+<entry>
+  <id>{{ article.permalink }}</id>
+  <title>{{ article.title }}</title>
+  <updated>{{ article.updated }}</updated>
+  <published>{{ article.published }}</published>
+  <link href="{{ article.href }}" rel="alternate"/>
+  <link href="{{ article.permalink }}" rel="related"/>
+  <author>
+    <name>{{ author }}</name>
+    <uri>{{ domain }}</uri>
+  </author>
+  <content type="html"><![CDATA[{{ article.content }}]]></content>
+</entry>

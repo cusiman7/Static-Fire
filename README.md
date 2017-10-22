@@ -1,5 +1,5 @@
-Static Fire Readme
-==================
+Static Fire
+===========
 
 Static Fire is an engine for creating static websites, primarily blogs.
 Instead of a standard database Static Fire uses Git as its primary data store.
@@ -7,6 +7,7 @@ Static Fire was built by [@RobertCusimano](https://twitter.com/RobertCusimano) a
 
 ## Features
 + Markdown articles
++ [Jinja2](http://jinja.pocoo.org/docs/2.9/) templating
 + Linked list style articles
 + Git based datastore
     + No database management
@@ -125,7 +126,7 @@ static\_fire.py performs the following actions:
 8. Build additonal pages
 
 ### Additional Pages
-Markdown files ending with ".text" in the "pages/" directory will be compiled into .html files and placed at the root of your website. This is useful for about pages or error pages like 404, 503 etc.
+Markdown files ending with ".text" in the "pages/" directory will be compiled into .html files and placed at the root of your website. This is useful for about pages or error pages like 404, 503 etc. The first line of the file should be the title of the page followed by the second line of "==" for Markdown.
 
 ### Post Receive Git Hook
 post-receive is a simple git hook to execute static\_fire.py after a git push is received.

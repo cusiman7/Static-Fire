@@ -1,8 +1,0 @@
-<article>
-<h1>
-  <a class="%TITLE_CLASS%" href="%TITLE_HREF%">%TITLE%</a><a class="permalink" href="%PERMA_HREF%">&#128279;</a>
-</h1>
-<h6 class="dateline">%DATE%</h6>
-%ARTICLE%
-</article>
-<div class="end">&#8212;</div>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<pre style="word-wrap: break-word; white-space: pre-wrap;">
+{{ article.title }}
+{{ '=' * article.title|length() }}
+
+    By {{ author }}
+    {{ article.date }}
+    {{ 'Link: %s' % article.link if article.link }}
+    {{ article.permalink }}
+
+{{ article.plain_text }}
+</pre>
+</body>
+</html>

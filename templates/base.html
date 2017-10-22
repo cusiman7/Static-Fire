@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>%TITLE%</title>
+<title>{{ page_title }}</title>
 <link rel="alternate" type="application/atom+xml" href="/feeds/atom.xml" />
-%TWITTER_CARD%
-%FB_OG%
+{% block social %}{% endblock %}
 </head>
 <body>
     <section id="articles">
-        %BODY%
+        {% block content %}{% endblock %}
         <div id="footer">
             <p class="smallprint">
-            %COPYRIGHT%
+            Copyright &copy; {{ year }} {{ author }}
             </p>
         </div>
     </section>

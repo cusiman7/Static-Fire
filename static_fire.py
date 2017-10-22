@@ -3,7 +3,6 @@
 import codecs
 import datetime
 import errno
-import markdown
 import os
 import pytz
 import shutil
@@ -22,13 +21,14 @@ class Article:
         self.is_new = is_new
 
         # Filled in when read() is called
+        self.template_vars = dict()
         self.full_text = None
         self.title = None
         self.summary = None
         self.link = None
         self.full_url = None
 
-    def read(self, config):
+    def read(self, config, md):
         input_file = codecs.open(os.path.join(config["blog"], self.path), mode="r", encoding="utf-8")
 
         line = input_file.readline().rstrip()
@@ -45,10 +45,25 @@ class Article:
             line = input_file.readline().rstrip()
 
         self.full_text = input_file.read()
+        input_file.close()
         root, _ = os.path.splitext(self.path)
         self.full_url = os.path.join(config["domain"], root + ".html")
-
-        input_file.close()
+    
+        from jinja2 import Markup
+        self.template_vars["content"] = Markup(md.reset().convert(self.full_text))
+        self.template_vars["published"] = self.created.isoformat()
+        self.template_vars["updated"] = self.updated.isoformat()
+        self.template_vars["plain_text"] = self.full_text
+        self.template_vars["create_date"] = self.created.strftime(config["date_format"])
+        self.template_vars["link"] = self.link
+        self.template_vars["permalink"] = self.full_url
+        self.template_vars["href"] = self.link if self.link else self.full_url
+        self.template_vars["title"] = self.title
+        self.template_vars["title_class"] = "link" if self.link else ""
+        if (self.link is not None):
+            self.template_vars["summary"] = "Link To: " + self.link
+        else:
+            self.template_vars["summary"]  = self.summary if self.summary is not None else self.title
 
     def __repr__(self):
         return self.path + " created: " + unicode(self.created) + " updated: " + unicode(self.updated)
@@ -74,20 +89,20 @@ def load_config():
 
 def load_templates(config):
     print("Templates")
-    templates = {}
-    templates_path = os.path.join(config["blog"], "templates")
-    for filename in os.listdir(templates_path):
-        if filename.endswith(".template"):
-            print(filename)
-            template_file = codecs.open(os.path.join(templates_path, filename), mode="r", encoding="utf-8")
-            template_text = template_file.read()
-            basename = os.path.basename(filename)
-            name, _ = os.path.splitext(basename)
-            templates[name] = template_text
-            template_file.close()
-    return templates
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
+    env = Environment(
+        loader=FileSystemLoader(os.path.join(config["blog"], "templates")),
+        autoescape=select_autoescape(['html', 'xml']),
+        trim_blocks=True,
+    )
+    env.globals["title"] = config["title"]
+    env.globals["author"] = config["author"]
+    env.globals["domain"] = config["domain"]
+    env.globals["year"] = str(datetime.datetime.now().year)
+    return env
 
 def load_markdown():
+    import markdown
     extensions = ["markdown.extensions.footnotes", "markdown.extensions.smarty"]
     extension_configs = {
         "markdown.extensions.footnotes": { "UNIQUE_IDS": True }
@@ -111,46 +126,26 @@ def makedirs(path):
         if e.errno != errno.EEXIST:
             raise
 
-def format_copyright(config):
-    return "Copyright " + u"\u00A9" + " " + str(datetime.datetime.now().year) + " " + config["author"]
-
 def build_page(config, md, templates, page_file_name):
     engine_path = config["blog"]
     input_file = codecs.open(os.path.join(engine_path, "pages", page_file_name), mode="r", encoding="utf-8")
     root, ext = os.path.splitext(page_file_name)
     output_path = os.path.join(config["www"], root + ".html")
-    output_file = codecs.open(output_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
 
     text = input_file.read()
-    html = md.reset().convert(text)
-
-    html = templates["base"].replace("%BODY%", html)
-    html = html.replace("%COPYRIGHT%", format_copyright(config))
-    html = html.replace("%TWITTER_CARD%", "")
-    html = html.replace("%FB_OG%", "")
-    title = text.split("\n", 1)[0]
-    html = html.replace("%TITLE%", title)
-    
-    output_file.write(html)
-
     input_file.close()
+
+    template_vars = dict()
+    template_vars["page_title"] = text.split("\n", 1)[0]
+    from jinja2 import Markup
+    template_vars["content"]  = Markup(md.reset().convert(text))
+
+    template = templates.get_template("basic.html")
+    html = template.render(template_vars)
+    
+    output_file = codecs.open(output_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
+    output_file.write(html)
     output_file.close()
-
-def build_article_html(config, md, templates, article):
-    html = md.reset().convert(article.full_text)
-    date = article.created.strftime(config["date_format"])
-    title_href = article.link if article.link else article.full_url
-    title_class = "link" if article.link else ""
-
-    template_text = templates["article"]
-    template_text = template_text.replace("%TITLE_CLASS%", title_class)
-    template_text = template_text.replace("%TITLE_HREF%", title_href)
-    template_text = template_text.replace("%TITLE%", article.title)
-    template_text = template_text.replace("%PERMA_HREF%", article.full_url)
-    template_text = template_text.replace("%DATE%", date)
-    template_text = template_text.replace("%ARTICLE%", html)
-
-    return template_text
 
 def build_article(config, md, templates, article):
     engine_path = config["blog"]
@@ -160,77 +155,37 @@ def build_article(config, md, templates, article):
     output_text_path = os.path.join(config["www"], root + ".text")
 
     makedirs(os.path.dirname(output_path))
-    output_file = codecs.open(output_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
+
+    template_vars = dict()
+    template_vars["page_title"] = article.title
+    template_vars["article"] = article.template_vars
+
+    # Plain text article
     output_text_file = codecs.open(output_text_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
-
-    # Plain text stuff
-    plain_text = article.title + "\n"
-    plain_text += "="*len(article.title) + "\n\n"
-    plain_text += "    By " + config["author"] + "\n"
-    date = article.created.strftime(config["date_format"])
-    plain_text += "    " + date + "\n"
-    if (article.link is not None):
-        plain_text += "    Link: " + article.link + "\n"
-    plain_text += "    " + article.full_url + "\n\n"
-    plain_text += article.full_text
-    
-    text_template_text = templates["text"]
-    text_html = text_template_text.replace("%BODY%", plain_text)
-
-    # Header and FB and Twitter stuff
-    base_html = templates["base"]
-    base_html = base_html.replace("%TITLE%", article.title)
-
-    summary = None
-    if (article.link is not None):
-        summary = "Link To: " + article.link
-    if (summary is None):
-        summary = article.summary if article.summary is not None else article.title
-
-    twitter_card_text = templates["twitter_card"]
-    twitter_card_text = twitter_card_text.replace("%TITLE%", article.title)
-    twitter_card_text = twitter_card_text.replace("%SUMMARY%", summary)
-
-    fb_og_text = templates["fb_og"]
-    fb_og_text = fb_og_text.replace("%TITLE%", article.title)
-    fb_og_text = fb_og_text.replace("%URL%", article.full_url)
-    fb_og_text = fb_og_text.replace("%SUMMARY%", summary)
-
-    base_html = base_html.replace("%TWITTER_CARD%", twitter_card_text)
-    base_html = base_html.replace("%FB_OG%", fb_og_text)
-    base_html = base_html.replace("%COPYRIGHT%", format_copyright(config))
-    
-    # Fill in article
-    article_html = build_article_html(config, md, templates, article)
-    final_html = base_html.replace("%BODY%", article_html)
-
-    output_file.write(final_html)
+    plain_text = templates.get_template("text.html")
+    text_html = plain_text.render(template_vars)
     output_text_file.write(text_html)
-
-    output_file.close()
     output_text_file.close()
 
-    return article
+    # HTML article
+    output_file = codecs.open(output_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
+    html = templates.get_template("article_standalone.html")
+    final_html = html.render(template_vars)    
+    output_file.write(final_html)
+    output_file.close()
 
 def build_homepage(config, md, templates, homepage_articles):
-    engine_path = config["blog"]
+    template_vars = dict()
+    template_vars["page_title"] = config["title"]
+    template_vars["articles"] = homepage_articles
+
+    template = templates.get_template("index.html")
+    html = template.render(template_vars)
+
     output_path = os.path.join(config["www"], "index.html")
     makedirs(os.path.dirname(output_path))
     output_file = codecs.open(output_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
-
-    base_html = templates["base"]
-    base_html = base_html.replace("%TITLE%", config["title"])
-    articles = ""
-    for article in homepage_articles:
-        article_html = build_article_html(config, md, templates, article)
-        articles += article_html
-
-    base_html = base_html.replace("%COPYRIGHT%", format_copyright(config))
-    base_html = base_html.replace("%TWITTER_CARD%", "")
-    base_html = base_html.replace("%FB_OG%", "")
-    base_html = base_html.replace("%BODY%", articles)
-
-    output_file.write(base_html)
+    output_file.write(html)
     output_file.close()
 
 def build_archive(config, md, templates, articles):
@@ -249,52 +204,27 @@ def build_archive(config, md, templates, articles):
 
         text += '<a href="' + article.full_url + '">' + article.title + '</a><br/>'
 
-    base_html = templates["base"].replace("%BODY%", text)
-    base_html = base_html.replace("%TITLE%", "Archive")
-    base_html = base_html.replace("%COPYRIGHT%", format_copyright(config))
-    base_html = base_html.replace("%TWITTER_CARD%", "")
-    base_html = base_html.replace("%FB_OG%", "")
+    template_vars = dict()
+    template_vars["page_title"] = "Archive"
+    template_vars["content"] = text
 
-    engine_path = config["blog"]
+    template = templates.get_template("basic.html")
+    html = template.render(template_vars)
+
     output_path = os.path.join(config["www"], "archive.html")
     makedirs(os.path.dirname(output_path))
     output_file = codecs.open(output_path, mode="w", encoding="utf-8", errors="xmlcarrefreplace")
 
-    output_file.write(base_html)
+    output_file.write(html)
     output_file.close()
 
 def build_feeds(config, md, templates, articles):
-    atom_feed = templates["atom"]
-    atom_feed = atom_feed.replace("%ID%", os.path.join(config["domain"], "feeds", "atom.xml"))
-    atom_feed = atom_feed.replace("%TITLE%", config["title"])
-    atom_feed = atom_feed.replace("%SUBTITLE%", "By " + config["author"])
-    atom_feed = atom_feed.replace("%LINK_ALTERNATE%", config["domain"])
-    atom_feed = atom_feed.replace("%LINK_SELF%", os.path.join(config["domain"], "feeds", "atom.xml"))
-    atom_feed = atom_feed.replace("%RIGHTS%", format_copyright(config))
-    atom_feed = atom_feed.replace("%UPDATED%", datetime.datetime.now(pytz.utc).isoformat())
-    
-    engine_path = config["blog"]
-    entries = ""
-    for article in articles:
-        entry = templates["atom_entry"]
-        entry = entry.replace("%ID%", article.full_url)
-        entry = entry.replace("%TITLE%", article.title)
-        if (article.link is None):
-            entry = entry.replace("%LINK_ALTERNATE%", article.full_url) 
-            entry = entry.replace("%LINK_RELATED%", "") 
-        else:
-            entry = entry.replace("%LINK_ALTERNATE%", article.link) 
-            entry = entry.replace("%LINK_RELATED%", '<link href="' + article.full_url + '" rel="related"/>') 
-        entry = entry.replace("%PUBLISHED%", article.created.isoformat())
-        entry = entry.replace("%UPDATED%", article.updated.isoformat())
-        entry = entry.replace("%AUTHOR_NAME%", config["author"])
-        entry = entry.replace("%AUTHOR_URI%", config["domain"])
+    atom_template = templates.get_template("atom.xml")
 
-        article_html = md.reset().convert(article.full_text)
-        entry = entry.replace("%CONTENT%", article_html)
-        entries += entry
-
-    atom_feed = atom_feed.replace("%ENTRIES%", entries)
+    template_vars = dict()
+    template_vars["articles"] = articles
+    template_vars["updated"] = datetime.datetime.now(pytz.utc).isoformat()
+    atom_feed = atom_template.render(template_vars)
  
     atom_path = os.path.join(config["www"], "feeds", "atom.xml")
     makedirs(os.path.dirname(atom_path))
@@ -304,9 +234,7 @@ def build_feeds(config, md, templates, articles):
     output_file.close()
 
 def build_tweet(config, templates, article):
-    tweet = templates["tweet"]
-    tweet = tweet.replace("%TITLE%", article.title)
-    tweet = tweet.replace("%URL%", article.full_url)
+    tweet = templates.get_template("tweet.template").render(article.template_vars)
     print("Tweet: " + tweet)           
     return tweet
 
@@ -356,10 +284,10 @@ def main(argv):
     for article in articles:
         if article.path.endswith(".text"):
             print(article)
-            article.read(config)
-            article = build_article(config, md, templates, article)
+            article.read(config, md)
+            build_article(config, md, templates, article)
             if len(homepage_articles) < int(config["homepage_count"]):
-                homepage_articles.append(article)
+                homepage_articles.append(article.template_vars)
             if (article.is_new):
                 twitter = get_twitter_api(config)
                 if (twitter):

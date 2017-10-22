@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>{{ domain }}/feeds/atom.xml</id>
+  <title>{{ title }}</title>
+  <updated>{{ updated }}</updated>
+  <link href="{{ domain }}" rel="alternate"/>
+  <link href="{{ domain }}/feeds/atom.xml" rel="self"/>
+  <rights>Copyright © {{ author }}</rights>
+  <subtitle>By {{ author }}</subtitle>
+{% for article in articles %}
+  {% include "atom_entry.xml" %}
+{% endfor %}
+</feed>
