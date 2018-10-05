@@ -1,2 +1,2 @@
-{{ article.title }}
-{{ article.permalink }}
+{{ title }}
+{{ permalink }}
