@@ -16,6 +16,7 @@ Static Fire was built by [@RobertCusimano](https://twitter.com/RobertCusimano) a
 + Tweet new articles
 + Twitter Cards and Facebook Open Graph meta tags built in
 + Plain text articles
++ Cloudflare API integration to purge static files from Cloudflare's cache
 
 ## Installation (Local)
     # Git clone then...
@@ -90,7 +91,7 @@ An example config looks like:
 
 + **homepage\_count** 
 
-    *String*. The number of most-recent articles to appear on the homepage and feeds.
+    *Int*. The number of most-recent articles to appear on the homepage and feeds.
 
 #### Optional Config Keys
 "twtr\*" keys are used collectively for auto tweeting new articles. No keys, no tweets.
@@ -111,6 +112,21 @@ An example config looks like:
 
     *String*
 
+"cloudflare\*" keys are used to purge static content from Cloudflare's cache when that content changes.
+
++ **cloudflare\_email**
+
+    *String*
+
++ **cloudflare\_zone\_id**
+
+    *String*
+
++ **cloudflare\_secret\_api\_key**
+
+    *String*
+
+
 ### Static Fire's Actions
 static\_fire.py performs the following actions:
 
@@ -124,6 +140,7 @@ static\_fire.py performs the following actions:
 6. Build feeds
 7. Build archive page
 8. Build additonal pages
+9. Purge files from Cloudflare's cache
 
 ### Additional Pages
 Markdown files ending with ".text" in the "pages/" directory will be compiled into .html files and placed at the root of your website. This is useful for about pages or error pages like 404, 503 etc. The first line of the file should be the title of the page followed by the second line of "==" for Markdown.

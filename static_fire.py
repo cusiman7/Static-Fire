@@ -8,10 +8,13 @@ import pytz
 import shutil
 import sys
 import time
+import requests
 
 import dateutil.parser
 from distutils.dir_util import copy_tree
 from operator import itemgetter
+from jinja2 import Markup
+from git import Repo
 
 class Article:
     def __init__(self, path, created, updated, is_new):
@@ -47,9 +50,8 @@ class Article:
         self.full_text = input_file.read()
         input_file.close()
         root, _ = os.path.splitext(self.path)
-        self.full_url = os.path.join(config["domain"], root + ".html")
+        self.full_url = os.path.join(config["domain"], root)
     
-        from jinja2 import Markup
         self.template_vars["content"] = Markup(md.reset().convert(self.full_text))
         self.template_vars["published"] = self.created.isoformat()
         self.template_vars["updated"] = self.updated.isoformat()
@@ -137,7 +139,6 @@ def build_page(config, md, templates, page_file_name):
 
     template_vars = dict()
     template_vars["page_title"] = text.split("\n", 1)[0]
-    from jinja2 import Markup
     template_vars["content"]  = Markup(md.reset().convert(text))
 
     template = templates.get_template("basic.html")
@@ -206,7 +207,7 @@ def build_archive(config, md, templates, articles):
 
     template_vars = dict()
     template_vars["page_title"] = "Archive"
-    template_vars["content"] = text
+    template_vars["content"] = Markup(text)
 
     template = templates.get_template("basic.html")
     html = template.render(template_vars)
@@ -239,26 +240,28 @@ def build_tweet(config, templates, article):
     return tweet
 
 def query_git_articles(config):
-    from git import Repo
     print("Git")
     repo = Repo(config["blog"])
     git = repo.git
 
     articles = list()
     article_files = git.ls_files("articles/*.text").split("\n")
+    head_rev = git.show("-s", "HEAD", "--format=\"%H\"").strip("\"")
     for article_file in article_files:
         if not os.path.isfile(article_file):
             continue
         article_revs = git.rev_list("HEAD", article_file).split("\n")
         first_rev = article_revs[-1]
         last_rev = article_revs[0]
-        first_timestamp = git.show("-s", "--format=\"%aI\"", first_rev).strip("\"")
-        last_timestamp = git.show("-s", "--format=\"%aI\"", last_rev).strip("\"")
+        timestamps = git.show("-s", "--format=\"%aI\"", first_rev, last_rev).split("\n")
+        first_timestamp = timestamps[0].strip("\"")
+        last_timestamp = first_timestamp
+        if len(timestamps) > 1:
+            last_timestamp = timestamps[1].strip("\"")
 
         created = dateutil.parser.parse(first_timestamp)
         updated = dateutil.parser.parse(last_timestamp)
 
-        head_rev = git.show("-s", "HEAD", "--format=\"%H\"").strip("\"")
         is_new = (head_rev == first_rev)
 
         a = Article(article_file, created, updated, is_new)
@@ -266,6 +269,59 @@ def query_git_articles(config):
 
     articles.sort(key=lambda a: a.created, reverse=True)
     return articles
+
+def build_purge_list(config):
+    print("Build Purge List")
+    repo = Repo(config["blog"])
+    git = repo.git
+
+    domain = config['domain']
+    changed = []
+    changed.append(domain) # Always purge homepage 
+    changed.append(os.path.join(domain, "feeds", "atom.xml")) # Purge atom feed
+    changed.append(os.path.join(domain, "archive")) # Purge archive
+
+    changed_articles = git.diff_tree("--no-commit-id", "--name-only", "-r", "HEAD", "articles").split("\n")
+    for article in changed_articles:
+        if not article:
+            continue
+        changed.append(os.path.join(domain, os.path.splitext(article)[0]))
+        changed.append(os.path.join(domain, os.path.splitext(article)[0] + ".text"))
+
+    changed_pages = git.diff_tree("--no-commit-id", "--name-only", "-r", "HEAD", "pages").split("\n")
+    for page in changed_pages:
+        if not page:
+            continue
+        changed.append(os.path.splitext(page)[0])
+
+    changed_www = git.diff_tree("--no-commit-id", "--name-only", "-r", "HEAD", "www").split("\n")
+    for f in changed_www:
+        if not f:
+            continue
+        changed.append(os.path.splitext(f)[0])
+    
+    return changed        
+
+def cloudflare_purge_cache(config, files):
+    keys = ("cloudflare_email", "cloudflare_zone_id", "cloudflare_secret_api_key")
+    if not all (k in config for k in keys):
+        return None
+    print('Purging Cloudflare Cache')
+    print(files)
+    
+    purge_paths = dict()
+    purge_paths['files'] = files
+
+    headers = {'X-Auth-Email': config['cloudflare_email'],
+            'X-Auth-Key': config['cloudflare_secret_api_key'],
+            'Content-Type': 'application/json'
+              }
+    r = requests.post('https://api.cloudflare.com/client/v4/zones/{}/purge_cache'.format(config['cloudflare_zone_id']),
+            json=purge_paths,
+            headers=headers)
+    
+    if r.status_code is not 200:
+        print(r.json())
     
 def main(argv):
     config = load_config()
@@ -283,7 +339,6 @@ def main(argv):
 
     for article in articles:
         if article.path.endswith(".text"):
-            print(article)
             article.read(config, md)
             build_article(config, md, templates, article)
             if len(homepage_articles) < int(config["homepage_count"]):
@@ -302,6 +357,9 @@ def main(argv):
     for filename in os.listdir(os.path.join(config["blog"], "pages")):
         if filename.endswith(".text"): 
             build_page(config, md, templates, filename)
+
+    paths_to_purge = build_purge_list(config)
+    cloudflare_purge_cache(config, paths_to_purge)
 
 if __name__ == "__main__":
     main(sys.argv)
