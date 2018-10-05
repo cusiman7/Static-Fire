@@ -292,13 +292,13 @@ def build_purge_list(config):
     for page in changed_pages:
         if not page:
             continue
-        changed.append(os.path.splitext(page)[0])
+        changed.append(os.path.join(domain, os.path.splitext(page)[0][6:]))
 
     changed_www = git.diff_tree("--no-commit-id", "--name-only", "-r", "HEAD", "www").split("\n")
     for f in changed_www:
         if not f:
             continue
-        changed.append(os.path.splitext(f)[0])
+        changed.append(os.path.join(domain, f[4:]))
     
     return changed        
 
