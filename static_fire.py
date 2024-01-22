@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import codecs
 import datetime
@@ -13,7 +13,7 @@ import requests
 import dateutil.parser
 from distutils.dir_util import copy_tree
 from operator import itemgetter
-from jinja2 import Markup
+from markupsafe import Markup
 from git import Repo
 
 class Article:
@@ -50,7 +50,7 @@ class Article:
         self.full_text = input_file.read()
         input_file.close()
         root, _ = os.path.splitext(self.path)
-        self.full_url = os.path.join(config["domain"], root)
+        self.full_url = os.path.join(config["domain"], root) + ".html"
     
         self.template_vars["content"] = Markup(md.reset().convert(self.full_text))
         self.template_vars["published"] = self.created.isoformat()
@@ -320,7 +320,7 @@ def cloudflare_purge_cache(config, files):
             json=purge_paths,
             headers=headers)
     
-    if r.status_code is not 200:
+    if r.status_code != 200:
         print(r.json())
     
 def main(argv):
